@@ -1,13 +1,13 @@
-name: Deploy Infra
+name: Deploy Infra to Azure
 
 on:
   push:
     branches:
-      - main  
-  workflow_dispatch: 
+      - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +24,15 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.5 # ou a versão que você usa localmente
 
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out main.tfplan
 
+      # 6. Apply Terraform
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve main.tfplan
