@@ -38,4 +38,5 @@ jobs:
 
       # 6. Apply Terraform
       - name: Terraform Apply
-        run: terraform apply -auto-approve main.tfplan
+        run: terraform apply main.tfplan
+
