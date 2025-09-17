@@ -1,29 +1,47 @@
-variable "resource_group_location" {
+variable "resource_group_name" {
+  description = "Resource group for FIAP-Architecture - SOAT33"
   type        = string
-  default     = "eastus"
-  description = "Location of the resource group."
+  default     = "controlepedidos-rg"
 }
 
-variable "resource_group_name_prefix" {
+variable "location" {
+  description = "East US"
   type        = string
-  default     = "rg"
-  description = "Prefix of the resource group name that's combined with a random ID so name is unique in your Azure subscription."
+  default     = "East US"
 }
 
-variable "node_count" {
+variable "vnet_name" {
+  description = "Vnet for FIAP-Architecture - SOAT33"
+  type        = string
+  default     = "controlepedidos-vnet"
+}
+
+variable "vnet_cidr" {
+  description = "CIDR da VNet"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "subnet_cidr" {
+  description = "CIDR da Subnet pública"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "aks_cluster_name" {
+  description = "Nome do cluster AKS"
+  type        = string
+  default     = "controlepedidos-aks"
+}
+
+variable "aks_node_count" {
+  description = "Número de nós no AKS"
   type        = number
-  description = "The initial quantity of nodes for the node pool."
-  default     = 3
+  default     = 1
 }
 
-variable "msi_id" {
+variable "aks_node_vm_size" {
+  description = "Tamanho da VM dos nós do AKS"
   type        = string
-  description = "The Managed Service Identity ID. Set this value if you're running this example using Managed Identity as the authentication method."
-  default     = null
-}
-
-variable "username" {
-  type        = string
-  description = "The admin username for the new cluster."
-  default     = "azureadmin"
+  default     = "Standard_DS2_v2"
 }
