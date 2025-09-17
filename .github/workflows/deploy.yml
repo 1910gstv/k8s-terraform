@@ -33,15 +33,25 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.7.5 # ou a versão que você usa localmente
+          terraform_version: 1.7.5
 
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform Import Resource Group
+        run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
+
+      - name: Terraform Import Virtual Network
+        run: terraform import azurerm_virtual_network.vnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet || true
+
+      - name: Terraform Import Subnet
+        run: terraform import azurerm_subnet.subnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet/subnets/subnet-public-1 || true
+
+      - name: Terraform Import AKS
+        run: terraform import azurerm_kubernetes_cluster.aks /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.ContainerService/managedClusters/controlepedidos-aks || true
+
       - name: Terraform Plan
         run: terraform plan -out main.tfplan
 
-      # 6. Apply Terraform
       - name: Terraform Apply
-        run: terraform apply main.tfplan
-
+        run: terraform apply -auto-approve main.tfplan
