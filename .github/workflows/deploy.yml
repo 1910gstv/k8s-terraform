@@ -7,8 +7,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  terraform:
+  bootstrap:
+    name: Bootstrap Storage Backend
     runs-on: ubuntu-latest
+    env:
+      RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.6
+
+      - name: Terraform Init & Apply (bootstrap)
+        working-directory: infra
+        run: |
+          terraform init
+          terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
+          terraform apply -auto-approve \
+            -target=azurerm_storage_account.storage \
+            -target=azurerm_storage_container.container
+
+  deploy:
+    name: Deploy Infra with Remote State
+    runs-on: ubuntu-latest
+    needs: bootstrap
     env:
       ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
@@ -17,41 +47,45 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Azure CLI script
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az account show
-
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.5
+          terraform_version: 1.9.6
 
-      - name: Terraform Init
-        run: terraform init
+      - name: Terraform Init (remote backend)
+        working-directory: infra
+        run:
+          terraform init -reconfigure
+          # run: terraform init -backend-config="resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=${{ env.CONTAINER_NAME }}" -backend-config="key=cluster-aks.tfstate"
 
       - name: Terraform Import Resource Group
+        working-directory: infra
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
 
       - name: Terraform Import Virtual Network
+        working-directory: infra
         run: terraform import azurerm_virtual_network.vnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet || true
 
       - name: Terraform Import Subnet
+        working-directory: infra
         run: terraform import azurerm_subnet.subnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet/subnets/subnet-public-1 || true
 
       - name: Terraform Import AKS
+        working-directory: infra
         run: terraform import azurerm_kubernetes_cluster.aks /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.ContainerService/managedClusters/controlepedidos-aks || true
 
       - name: Terraform Plan
+        working-directory: infra
         run: terraform plan -out main.tfplan
 
       - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        working-directory: infra
         run: terraform apply -auto-approve main.tfplan

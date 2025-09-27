@@ -45,3 +45,15 @@ variable "aks_node_vm_size" {
   type        = string
   default     = "Standard_DS2_v2"
 }
+
+variable "storage_account_name" {
+  description = "Nome do Storage Account"
+  type =  string
+  default = "controlepedidos-storage-account"
+}
+
+variable "storage_container_name" {
+  description = "Nome do Storage Container"
+  type =  string
+  default = "controlepedidos-storage-container"
+}
