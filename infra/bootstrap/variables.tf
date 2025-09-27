@@ -13,9 +13,11 @@ variable "location" {
 variable "storage_account_name" {
   type        = string
   description = "Storage Account para o tfstate (lowercase/números, único)"
+  default = "controlepedidossa"
 }
 
 variable "storage_container_name" {
   type        = string
   description = "Container para o tfstate"
+  default = "controlepedidossc"  
 }
