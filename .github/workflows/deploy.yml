@@ -37,16 +37,7 @@ jobs:
           terraform apply -auto-approve \
             -target=azurerm_storage_account.storage \
             -target=azurerm_storage_container.container
-        run: |
-          terraform init \       
-            -backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP }}" \
-            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
-            -backend-config="key=cluster-aks.tfstate"
-          terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
-          terraform apply -auto-approve \
-            -target=azurerm_storage_account.storage \
-            -target=azurerm_storage_container.container
+        
 
   deploy:
     name: Deploy Infra with Remote State
