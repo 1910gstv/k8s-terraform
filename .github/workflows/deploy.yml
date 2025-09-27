@@ -35,10 +35,26 @@ jobs:
         with:
           terraform_version: 1.3.0
 
+      - name: Create Storage Account and Container
+        run: |
+          az storage account create \
+            --name ${{ env.STORAGE_ACCOUNT_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --sku Standard_LRS \
+            --kind StorageV2
+
+          az storage container create \
+            --name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --account-name ${{ env.STORAGE_ACCOUNT_NAME }}
+
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          # Inicializa sem backend remoto, usa state local
-          terraform init -backend=false
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
+            -backend-config="key=cluster-aks.tfstate"
+          
           terraform plan -out=tfplan
           terraform apply -auto-approve -target=azurerm_storage_account.storage -target=azurerm_storage_container.container
 
@@ -94,4 +110,4 @@ jobs:
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve main.tfplan
+        run: terraform apply -auto-approve main.
