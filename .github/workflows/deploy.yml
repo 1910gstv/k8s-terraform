@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
-      STORAGE_ACCOUNT_NAME : "controlepedidossa"
-      STORAGE_CONTAINER_NAME : "controlepedidossc1"
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc1"
 
     steps:
       - name: Checkout repository
@@ -31,8 +31,9 @@ jobs:
           terraform_version: 1.3.0
 
       - name: Terraform Init & Apply (bootstrap)
+        working-directory: infra/bootstrap
         run: |
-          terraform init -backend-config="skip_provider_registration=true" -backend=false
+          terraform init -backend=false
           terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
           terraform apply -auto-approve \
             -target=azurerm_storage_account.storage \
@@ -48,8 +49,8 @@ jobs:
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
       ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
-      STORAGE_ACCOUNT_NAME : "controlepedidossa"
-      STORAGE_CONTAINER_NAME : "controlepedidossc1"
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc1"
 
     steps:
       - name: Checkout repository
@@ -66,6 +67,7 @@ jobs:
           terraform_version: 1.3.0
 
       - name: Terraform Init (remote backend)
+        working-directory: infra/deploy
         run: |
           terraform init -reconfigure \
             -backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP }}" \
@@ -74,20 +76,26 @@ jobs:
             -backend-config="key=cluster-aks.tfstate"
 
       - name: Terraform Import Resource Group
+        working-directory: infra/deploy
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
 
       - name: Terraform Import Virtual Network
+        working-directory: infra/deploy
         run: terraform import azurerm_virtual_network.vnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet || true
 
       - name: Terraform Import Subnet
+        working-directory: infra/deploy
         run: terraform import azurerm_subnet.subnet /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.Network/virtualNetworks/controlepedidos-vnet/subnets/subnet-public-1 || true
 
       - name: Terraform Import AKS
+        working-directory: infra/deploy
         run: terraform import azurerm_kubernetes_cluster.aks /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg/providers/Microsoft.ContainerService/managedClusters/controlepedidos-aks || true
 
       - name: Terraform Plan
+        working-directory: infra/deploy
         run: terraform plan -out main.tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
+        working-directory: infra/deploy
         run: terraform apply -auto-approve main.tfplan
