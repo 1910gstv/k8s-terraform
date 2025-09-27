@@ -1,6 +1,7 @@
 variable "resource_group_name" {
   type        = string
   description = "Resource Group onde ficará o Storage do tfstate"
+  default = "controlepedidos-rg"
 }
 
 variable "location" {
