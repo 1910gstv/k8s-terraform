@@ -32,7 +32,7 @@ jobs:
 
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          terraform init -backend=false
+          terraform init
           terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
           terraform apply -auto-approve \
             -target=azurerm_storage_account.storage \
