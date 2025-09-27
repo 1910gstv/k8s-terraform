@@ -1,10 +1,11 @@
 name: Deploy Infra to Azure
 
 on:
+  pull_request:
+    branches: main
+  
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: main
 
 jobs:
   bootstrap:
