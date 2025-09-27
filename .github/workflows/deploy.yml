@@ -41,7 +41,7 @@ jobs:
             --name ${{ env.STORAGE_ACCOUNT_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --sku Standard_LRS \
-            --kind StorageV2
+            --kind StorageV2 
 
           az storage container create \
             --name ${{ env.STORAGE_CONTAINER_NAME }} \
