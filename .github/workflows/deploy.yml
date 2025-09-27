@@ -93,6 +93,9 @@ jobs:
             -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
             -backend-config="key=cluster-aks.tfstate"
 
+      - name: Terraform Import Storage Account and Container      
+        run: terraform import azurerm_storage_account.storage /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Storage/storageAccounts/${STORAGE_ACCOUNT_NAME}
+
       - name: Terraform Import Resource Group
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
 
