@@ -29,11 +29,9 @@ jobs:
 
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          terraform init
-          terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
-          terraform apply -auto-approve \
-            -target=azurerm_storage_account.storage \
-            -target=azurerm_storage_container.container
+          terraform init -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" -backend-config="key=cluster-aks.tfstate"
+          terraform plan -out=tfplan
+          terraform apply -auto-approve -target=azurerm_storage_account.storage -target=azurerm_storage_container.container
 
   deploy:
     name: Deploy Infra with Remote State
