@@ -50,7 +50,7 @@ jobs:
         working-directory: infra/bootstrap
         run: |
           terraform plan \
-            -var "resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -var "resource_group_name=${{ secrets.RESOURCE_GROUP }}" \
             -var "storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
             -var "storage_container_name=${{ env.STORAGE_CONTAINER_NAME }}"
           terraform apply -auto-approve \
