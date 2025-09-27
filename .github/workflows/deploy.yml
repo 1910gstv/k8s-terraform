@@ -34,8 +34,14 @@ jobs:
         working-directory: infra/bootstrap
         run: |
           terraform init -backend=false
-          terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
+          terraform plan \
+            -var "resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -var "storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -var "storage_container_name=${{ env.STORAGE_CONTAINER_NAME }}"
           terraform apply -auto-approve \
+            -var "resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -var "storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -var "storage_container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
             -target=azurerm_storage_account.storage \
             -target=azurerm_storage_container.container
         
