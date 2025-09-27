@@ -49,11 +49,11 @@ variable "aks_node_vm_size" {
 variable "storage_account_name" {
   description = "Nome do Storage Account"
   type =  string
-  default = "controlepedidos-storage-account"
+  default = "controlepedidos-sa"
 }
 
 variable "storage_container_name" {
   description = "Nome do Storage Container"
   type =  string
-  default = "controlepedidos-storage-container"
+  default = "controlepedidos-sc"
 }
