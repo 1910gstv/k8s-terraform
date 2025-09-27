@@ -44,6 +44,8 @@ jobs:
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
       ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      STORAGE_ACCOUNT_NAME : "controlepedidossa"
+      STORAGE_ACCOUNT_CONTAINER : "controlepedidossc"
 
     steps:
       - name: Checkout repository
@@ -61,8 +63,12 @@ jobs:
 
       - name: Terraform Init (remote backend)
         run: |
-          terraform init -reconfigure \-backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP }}" 
-      
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="storage_container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
+            -backend-config="key=cluster-aks.tfstate"
+
       - name: Terraform Import Resource Group
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
 
