@@ -2,17 +2,25 @@ name: Deploy Infra to Azure
 
 on:
   pull_request:
-    branches: main
-
+    branches:
+      - main
   push:
-    branches: main
+    branches:
+      - main
 
 jobs:
   bootstrap:
     name: Bootstrap Storage Backend
     runs-on: ubuntu-latest
     env:
+      ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
+      ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,15 +33,30 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.6
+          terraform_version: 1.3.0
+
+      - name: Create Storage Account and Container
+        run: |
+          az storage account create \
+            --name ${{ env.STORAGE_ACCOUNT_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --sku Standard_LRS \
+            --kind StorageV2 
+
+          az storage container create \
+            --name ${{ env.STORAGE_CONTAINER_NAME }} \
+            --account-name ${{ env.STORAGE_ACCOUNT_NAME }}
 
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          terraform init
-          terraform plan -var "resource_group_name=${{ env.RESOURCE_GROUP }}"
-          terraform apply -auto-approve \
-            -target=azurerm_storage_account.storage \
-            -target=azurerm_storage_container.container
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
+            -backend-config="key=cluster-aks.tfstate"
+          
+          terraform plan -out=tfplan
+          terraform apply -auto-approve -target=azurerm_storage_account.storage -target=azurerm_storage_container.container
 
   deploy:
     name: Deploy Infra with Remote State
@@ -44,6 +67,9 @@ jobs:
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
       ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc"
+      RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
     steps:
       - name: Checkout repository
@@ -57,12 +83,18 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.6
+          terraform_version: 1.3.0
 
       - name: Terraform Init (remote backend)
-        run:
-          terraform init -reconfigure
-          # run: terraform init -backend-config="resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=${{ env.CONTAINER_NAME }}" -backend-config="key=cluster-aks.tfstate"
+        run: |
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
+            -backend-config="key=cluster-aks.tfstate"
+
+      - name: Terraform Import Storage Account and Container      
+        run: terraform import azurerm_storage_account.storage /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Storage/storageAccounts/${STORAGE_ACCOUNT_NAME}
 
       - name: Terraform Import Resource Group
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
@@ -81,4 +113,4 @@ jobs:
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve main.tfplan
+        run: terraform apply -auto-approve main.
