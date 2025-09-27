@@ -45,7 +45,7 @@ jobs:
       ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
       STORAGE_ACCOUNT_NAME : "controlepedidossa"
-      STORAGE_CONTAINER_NAME : "controlepedidossc"
+      STORAGE_CONTAINER_NAME : "controlepedidossc1"
 
     steps:
       - name: Checkout repository
