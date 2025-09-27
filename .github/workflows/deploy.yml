@@ -2,19 +2,24 @@ name: Deploy Infra to Azure
 
 on:
   pull_request:
-    branches: main
-
+    branches:
+      - main
   push:
-    branches: main
+    branches:
+      - main
 
 jobs:
   bootstrap:
     name: Bootstrap Storage Backend
     runs-on: ubuntu-latest
     env:
+      ARM_CLIENT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
+      ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
-      STORAGE_ACCOUNT_NAME : "controlepedidossa"
-      STORAGE_CONTAINER_NAME : "controlepedidossc"
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc"
 
     steps:
       - name: Checkout repository
@@ -23,7 +28,7 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{secrets.AZURE_CREDENTIALS}}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -32,7 +37,8 @@ jobs:
 
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          terraform init -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" -backend-config="key=cluster-aks.tfstate"
+          # Inicializa sem backend remoto, usa state local
+          terraform init -backend=false
           terraform plan -out=tfplan
           terraform apply -auto-approve -target=azurerm_storage_account.storage -target=azurerm_storage_container.container
 
@@ -45,8 +51,9 @@ jobs:
       ARM_CLIENT_SECRET: ${{ fromJSON(secrets.AZURE_CREDENTIALS).clientSecret }}
       ARM_TENANT_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).tenantId }}
       ARM_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
-      STORAGE_ACCOUNT_NAME : "controlepedidossa"
-      STORAGE_CONTAINER_NAME : "controlepedidossc"
+      STORAGE_ACCOUNT_NAME: "controlepedidossa"
+      STORAGE_CONTAINER_NAME: "controlepedidossc"
+      RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
     steps:
       - name: Checkout repository
@@ -64,7 +71,11 @@ jobs:
 
       - name: Terraform Init (remote backend)
         run: |
-          terraform init -reconfigure -backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=controlepedidossc" -backend-config="key=cluster-aks.tfstate"
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" \
+            -backend-config="key=cluster-aks.tfstate"
 
       - name: Terraform Import Resource Group
         run: terraform import azurerm_resource_group.rg /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/controlepedidos-rg || true
