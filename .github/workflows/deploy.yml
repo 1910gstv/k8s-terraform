@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+      STORAGE_ACCOUNT_NAME : "controlepedidossa"
+      STORAGE_CONTAINER_NAME : "controlepedidossc"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,7 +32,7 @@ jobs:
 
       - name: Terraform Init & Apply (bootstrap)
         run: |
-          terraform init -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" -backend-config="key=cluster-aks.tfstate"
+          terraform init -backend-config="resource_group_name=${{ env.RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=${{ env.STORAGE_CONTAINER_NAME }}" -backend-config="key=cluster-aks.tfstate"
           terraform plan -out=tfplan
           terraform apply -auto-approve -target=azurerm_storage_account.storage -target=azurerm_storage_container.container
 
