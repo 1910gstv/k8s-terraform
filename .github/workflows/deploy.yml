@@ -30,6 +30,15 @@ jobs:
         with:
           terraform_version: 1.3.0
 
+      - name: Terraform Import Storage Account
+        working-directory: infra/bootstrap
+        run: terraform import azurerm_storage_account.sa /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${{ env.RESOURCE_GROUP }}/providers/Microsoft.Storage/storageAccounts/${{ env.STORAGE_ACCOUNT_NAME }} || true
+
+      - name: Terraform Import Storage Container
+        working-directory: infra/bootstrap
+        run: terraform import azurerm_storage_container.container /subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/${{ env.RESOURCE_GROUP }}/providers/Microsoft.Storage/storageAccounts/${{ env.STORAGE_ACCOUNT_NAME }}/blobServices/default/containers/${{ env.STORAGE_CONTAINER_NAME }} || true
+
+
       - name: Terraform Init & Apply (bootstrap)
         working-directory: infra/bootstrap
         run: |
